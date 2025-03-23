@@ -50,9 +50,17 @@ def view_attendance_records():
     def search_records():
         tree.delete(*tree.get_children())  # Clear previous results
 
-        query = "SELECT * FROM Attendance WHERE 1=1"
+        # query = "SELECT * FROM Attendance WHERE 1=1"
+        # params = []
+        qyery = """
+            SELECT a.id, s.name, c.name, a.date, a.status
+            FROM Attendance a
+            JOIN Students s ON a.student_id = s.id
+            JOIN Courses c ON a.course_id = c.id
+            WHERE 1=1
+        """
         params = []
-
+        
         if student_entry.get():
             query += " AND student_id = ?"
             params.append(student_entry.get())

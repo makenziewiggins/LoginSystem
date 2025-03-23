@@ -1,16 +1,19 @@
 # attendance_graphs.py
 
 import pyodbc
+import sqlite3
 import matplotlib.pyplot as plt
 
 def plot_attendance_per_class():
-    conn = pyodbc.connect(
-        r'DRIVER={ODBC Driver 17 for SQL Server};'
-        r'SERVER=(localdb)\MSSQLLocalDB;'
-        r'DATABASE=AttendanceTrackingDB;'
-        r'Trusted_Connection=yes;'
-    )
-    cursor = conn.cursor()
+   #    r'DRIVER={ODBC Driver 17 for SQL Server};'
+   #     r'SERVER=(localdb)\MSSQLLocalDB;'
+   #    r'DATABASE=AttendanceTrackingDB;'
+   #     r'Trusted_Connection=yes;'
+   #)
+   #cursor = conn.cursor()
+   conn = sqlite3.connect('AttendanceTrackingDB.db')
+   cursor = conn.cursor()
+
 
     query = """
         SELECT c.name, COUNT(*) as present_count
