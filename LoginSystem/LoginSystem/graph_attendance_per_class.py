@@ -13,10 +13,10 @@ def plot_attendance_per_class():
     cursor = conn.cursor()
 
     query = """
-        SELECT c.course_name, COUNT(*) as attendance_count
+        SELECT c.name, COUNT(*) as attendance_count
         FROM attendance a
-        JOIN courses c ON a.course_id = c.course_id
-        GROUP BY c.course_name
+        JOIN courses c ON a.course_id = c.id
+        GROUP BY c.name
     """
     cursor.execute(query)
     results = cursor.fetchall()

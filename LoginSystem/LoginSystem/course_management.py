@@ -65,14 +65,31 @@ def show_courses():
 
     tk.Label(window, text="Available Courses", font=("Arial", 14)).pack(pady=10)
 
+    canvas = tk.Canvas(window)
+    scrollbar = tk.Scrollbar(window, orient="vertical", command=canvas.yview)
+    scrollable_frame = tk.Frame(canvas)
+
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(
+            scrollregion=canvas.bbox("all")
+        )
+    )
+
+    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
     for course in courses:
-        frame = tk.Frame(window)
+        frame = tk.Frame(scrollable_frame)
         frame.pack(fill="x", padx=10, pady=5)
 
         course_text = f"{course[0]} ({course[2]}): {course[1]}"
         tk.Label(frame, text=course_text, anchor="w", width=50).pack(side="left")
 
         tk.Button(frame, text="Edit", command=lambda c=course: open_edit_form(c)).pack(side="right")
+
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
 
     tk.Button(window, text="Close", command=window.destroy).pack(pady=10)
 
@@ -106,8 +123,6 @@ def open_edit_form(course):
             messagebox.showerror("Error", "Update failed.")
 
     tk.Button(window, text="Save Changes", command=save_changes).pack(pady=15)
-
-
 
 # Course Management UI form
 def course_form_ui():

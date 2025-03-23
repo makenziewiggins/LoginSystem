@@ -6,7 +6,7 @@ from course_management import course_form_ui, show_courses
 from student_management import open_student_manager
 from Enrollment_UICode import open_enrollment_window, view_enrollments_by_course
 from attendance_tracker import launch_attendance_tracker, view_attendance_records
-from report_generator import generate_pdf
+from report_generator import generate_pdf_by_course, generate_pdf_by_student
 from attendance_graphs import plot_attendance_per_class, plot_present_vs_absent
 
 # 2. --- Database Connection ---
@@ -34,13 +34,10 @@ def authenticate_user():
     else:
         messagebox.showerror("Login Failed", "Invalid username or password")
 
-def open_dashboard():
-    dashboard = tk.Toplevel()
-    dashboard.title("Attendance Dashboard")
-    dashboard.geometry("400x400")
-
-    canvas = tk.Canvas(dashboard)
-    scrollbar = tk.Scrollbar(dashboard, orient="vertical", command=canvas.yview)
+# Setup Scrollabars
+def setup_scrollbars(window):
+    canvas = tk.Canvas(window)
+    scrollbar = tk.Scrollbar(window, orient="vertical", command=canvas.yview)
     scrollable_frame = tk.Frame(canvas)
 
     scrollable_frame.bind(
@@ -56,20 +53,45 @@ def open_dashboard():
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar.pack(side="right", fill="y")
 
+    return scrollable_frame
+
+# --- Open Dashboard ---
+def open_dashboard():
+    dashboard = tk.Toplevel()
+    dashboard.title("Attendance Dashboard")
+    dashboard.geometry("400x400")
+
+    scrollable_frame = setup_scrollbars(dashboard)
+
     # --- PDF Report Popup ---
     def handle_generate_pdf():
         top = tk.Toplevel(dashboard)
         top.title("Generate Attendance Report")
         top.geometry("300x150")
 
-        tk.Label(top, text="Enter Student ID:").pack(pady=5)
-        id_entry = tk.Entry(top)
+        scrollable_frame = setup_scrollbars(top)
+
+        tk.Label(scrollable_frame, text="Enter Student ID:").pack(pady=5)
+        
+        tk.Button(scrollable_frame, text="Student", command=handle_generate_pdf_by_student).pack(pady=5)
+        tk.Button(scrollable_frame, text="Course", command=handle_generate_pdf_by_course).pack(pady=5)
+
+    # --- PDF Report Popup for Student ---
+    def handle_generate_pdf_by_student():
+        top = tk.Toplevel(dashboard)
+        top.title("Generate Attendance Report")
+        top.geometry("300x150")
+
+        scrollable_frame = setup_scrollbars(top)
+
+        tk.Label(scrollable_frame, text="Enter Student ID:").pack(pady=5)
+        id_entry = tk.Entry(scrollable_frame)
         id_entry.pack()
 
         def submit():
             try:
                 student_id = int(id_entry.get())
-                result = generate_pdf(student_id)
+                result = generate_pdf_by_student(student_id)
                 if result:
                     tk.messagebox.showinfo("PDF Report", result)
                 else:
@@ -78,7 +100,34 @@ def open_dashboard():
             except Exception as e:
                 tk.messagebox.showerror("Error", f"Failed to generate report:\n{e}")
 
-        tk.Button(top, text="Generate PDF", command=submit).pack(pady=10)
+        tk.Button(scrollable_frame, text="Generate PDF", command=submit).pack(pady=10)
+        
+
+    # --- PDF Report Popup for Course ---
+    def handle_generate_pdf_by_course():
+        top = tk.Toplevel(dashboard)
+        top.title("Generate Attendance Report by Course")
+        top.geometry("300x150")
+
+        scrollable_frame = setup_scrollbars(top)
+
+        tk.Label(scrollable_frame, text="Enter Course ID:").pack(pady=5)
+        id_entry = tk.Entry(scrollable_frame)
+        id_entry.pack()
+
+        def submit():
+            try:
+                course_id = int(id_entry.get())
+                result = generate_pdf_by_course(course_id)
+                if result:
+                    tk.messagebox.showinfo("PDF Report", result)
+                else:
+                    tk.messagebox.showwarning("No Data", "No attendance records found.")
+                top.destroy()
+            except Exception as e:
+                tk.messagebox.showerror("Error", f"Failed to generate report:\n{e}")
+
+        tk.Button(scrollable_frame, text="Generate PDF", command=submit).pack(pady=10)
 
     # --- Dropdown for Course-based Graph ---
     def open_present_vs_absent_popup():
@@ -86,7 +135,9 @@ def open_dashboard():
         top.title("Select Course")
         top.geometry("300x150")
 
-        tk.Label(top, text="Select Course:").pack(pady=5)
+        scrollable_frame = setup_scrollbars(top)
+
+        tk.Label(scrollable_frame, text="Select Course:").pack(pady=5)
 
         cursor.execute("SELECT id, name FROM courses")
         courses = cursor.fetchall()
@@ -95,7 +146,7 @@ def open_dashboard():
         selected = tk.StringVar(top)
         selected.set(list(course_map.keys())[0])  # default value
 
-        dropdown = tk.OptionMenu(top, selected, *course_map.keys())
+        dropdown = tk.OptionMenu(scrollable_frame, selected, *course_map.keys())
         dropdown.pack()
 
         def submit():
@@ -103,23 +154,22 @@ def open_dashboard():
             top.destroy()
             plot_present_vs_absent(course_id)
 
-        tk.Button(top, text="Show Chart", command=submit).pack(pady=10)
-
+        tk.Button(scrollable_frame, text="Show Chart", command=submit).pack(pady=10)
 
     # --- Dashboard Buttons ---
     tk.Label(scrollable_frame, text="Welcome to the Dashboard!", font=("Arial", 14)).pack(pady=10)
 
-    tk.Button(scrollable_frame, text="Open Attendance Manager", command=open_attendance_manager).pack(pady=5)
-    tk.Button(scrollable_frame, text="View Attendance per Class", command=plot_attendance_per_class).pack(pady=5)
-    tk.Button(scrollable_frame, text="View Students Present per Class", command=plot_attendance_per_class).pack(pady=5)
-    tk.Button(scrollable_frame, text="View Present vs. Absent (Select Course)", command=open_present_vs_absent_popup).pack(pady=5)
-    tk.Button(scrollable_frame, text="View Attendance Records", command=view_attendance_records).pack(pady=5)
-    tk.Button(scrollable_frame, text="Generate PDF Attendance Report", command=handle_generate_pdf).pack(pady=5)
+    #tk.Button(scrollable_frame, text="View Students Present per Class", command=plot_attendance_per_class).pack(pady=5)
     tk.Button(scrollable_frame, text="Student Management", command=open_student_manager).pack(pady=5)
     tk.Button(scrollable_frame, text="Course Management", command=course_form_ui).pack(pady=5)
-    tk.Button(scrollable_frame, text="View Courses", command=show_courses).pack(pady=5)
     tk.Button(scrollable_frame, text="Enroll Student", command=open_enrollment_window).pack(pady=5)
+    tk.Button(scrollable_frame, text="Open Attendance Manager", command=open_attendance_manager).pack(pady=5)
+    #tk.Button(scrollable_frame, text="View Attendance Records", command=view_attendance_records).pack(pady=5)
+    tk.Button(scrollable_frame, text="View Attendance per Class", command=plot_attendance_per_class).pack(pady=5)
+    tk.Button(scrollable_frame, text="View Present vs. Absent (Select Course)", command=open_present_vs_absent_popup).pack(pady=5)
     tk.Button(scrollable_frame, text="View Enrollments by Course", command=view_enrollments_by_course).pack(pady=5)
+    tk.Button(scrollable_frame, text="View Courses", command=show_courses).pack(pady=5)
+    tk.Button(scrollable_frame, text="Generate PDF Attendance Report", command=handle_generate_pdf).pack(pady=5)
     tk.Button(scrollable_frame, text="Logout", command=lambda: [dashboard.destroy(), root.quit()]).pack(pady=20)
 
 def open_attendance_manager():
